@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: houses
+    description: Housing dataset and model
 paths:
   /healthz:
     get:
@@ -24,6 +26,56 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /houses:
+    get:
+      operationId: getHouses
+      tags: [houses]
+      summary: Get the full housing dataset used to train the model
+      responses:
+        "200":
+          description: List of house records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/House"
+
+  /model:
+    get:
+      operationId: getModel
+      tags: [houses]
+      summary: Get the trained linear regression model statistics
+      responses:
+        "200":
+          description: Model statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelStats"
+
+  /predict:
+    post:
+      operationId: predictPrice
+      tags: [houses]
+      summary: Predict house price given features
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HouseFeatures"
+      responses:
+        "200":
+          description: Predicted price
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PredictionResult"
+        "400":
+          description: Invalid input
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +86,87 @@ components:
       required:
         - status
 
+    House:
+      type: object
+      required: [id, sqft, bedrooms, bathrooms, price]
+      properties:
+        id:
+          type: integer
+        sqft:
+          type: number
+        bedrooms:
+          type: integer
+        bathrooms:
+          type: number
+        price:
+          type: number
+
+    ModelStats:
+      type: object
+      required:
+        - intercept
+        - coefficients
+        - rSquared
+        - adjustedRSquared
+        - rmse
+        - mae
+        - sampleSize
+        - featureNames
+      properties:
+        intercept:
+          type: number
+        coefficients:
+          type: array
+          items:
+            type: number
+        rSquared:
+          type: number
+        adjustedRSquared:
+          type: number
+        rmse:
+          type: number
+        mae:
+          type: number
+        sampleSize:
+          type: integer
+        featureNames:
+          type: array
+          items:
+            type: string
+
+    HouseFeatures:
+      type: object
+      required: [sqft, bedrooms, bathrooms]
+      properties:
+        sqft:
+          type: number
+        bedrooms:
+          type: integer
+        bathrooms:
+          type: number
+
+    PredictionResult:
+      type: object
+      required: [predictedPrice, features, breakdown]
+      properties:
+        predictedPrice:
+          type: number
+        features:
+          $ref: "#/components/schemas/HouseFeatures"
+        breakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/BreakdownItem"
+
+    BreakdownItem:
+      type: object
+      required: [feature, coefficient, value, contribution]
+      properties:
+        feature:
+          type: string
+        coefficient:
+          type: number
+        value:
+          type: number
+        contribution:
+          type: number
